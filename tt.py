@@ -77,6 +77,12 @@ def report2():
 	return result, on
 
 
+def dump2():
+	lines,on = report2()
+	for (task,duration) in lines:
+		print (str(duration), task)
+	return on
+
 #def report3():
 #	runs = defaultdict(list)
 
@@ -90,6 +96,8 @@ if arg in ['on', 'off', 'desc']:
 	store(arg, misc)
 	if arg in ('on','off'):
 		subprocess.check_call(['notify-send', 'unixy_time_tracker', arg])
+	if arg == 'on':
+		subprocess.check_call(['/home/koom/unixy_time_tracker/tt_beep'])
 elif arg == 'dump0':
 	for r in records():
 		print(r)
@@ -97,8 +105,12 @@ elif arg == 'dump1':
 	for i in report1()[0]:
 		print (i)
 elif arg == 'dump2':
-	for (task,duration) in report2()[0]:
-		print (str(duration), task)
+	dump2()
+elif arg == 'info':
+	if dump2():
+		print('running.')
+	else:
+		print('stopped.')
 elif arg == 'is_on':
 	if report2()[1]:
 		print('yep')
