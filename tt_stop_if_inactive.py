@@ -2,8 +2,12 @@
 
 import subprocess
 
-if int(subprocess.check_output(['xprintidle'])) > 10 * 60 * 1000:
-	if subprocess.call(['tt_is_on']) == 0:
-		print('idle, turning tt off')
-		subprocess.check_call(['tt', 'off'])
-
+try:
+	secs = int(subprocess.check_output(['xprintidle'])) / 1000
+	if secs > 10 * 60:
+		if subprocess.call(['tt_is_on']) == 0:
+			print('idle, turning tt off')
+			subprocess.check_call(['tt', 'off', str(secs) + 'secs idle'])
+except e:
+	subprocess.check_call(['tt', 'error', str(e)])
+	raise e

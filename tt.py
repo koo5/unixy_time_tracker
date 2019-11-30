@@ -9,6 +9,9 @@ import subprocess
 
 Rec = namedtuple('Rec', ['action', 'ts', 'desc'])
 
+def print_rec_nice(r):
+	print(str(r.ts), r.action, r.desc)
+
 def make_conn():
 	conn = psycopg2.connect("dbname=hours user=hours password=hours")
 	return conn
@@ -29,11 +32,13 @@ def report0():
 				yield Rec(*r)
 
 
-def report1():
+def report1(verbose = False):
 	runs = []
 	on = False
 	task = '???'
 	last_start = None
+	last_tick = None
+	use_ticks = False
 
 	def start(r):
 		nonlocal on, last_start
@@ -51,30 +56,54 @@ def report1():
 			else:
 				runs.append((task, [last_run]))
 
+	def get_now():
+		return datetime.datetime.now(datetime.timezone.utc)
+
+	def fake_stop(at_time):
+		stop(Rec('off', at_time, ''))
+
+	def check_last_tick(at_time):
+		nonlocal last_tick, on
+		if use_ticks and on:
+			if last_tick == None:
+				raise('wtf')
+			if at_time - last_tick > datetime.timedelta(minutes=5):
+				if verbose:	print('lack of ticks, stopping')
+				fake_stop(last_tick)
+
 	for r in report0():
-		#print (r)
+		if verbose: print_rec_nice(r)
+		check_last_tick(r.ts)
 		if r.action == 'on':
 			start(r)
-		if r.action == 'off':
+			last_tick = r.ts
+		elif r.action == 'off':
 			stop(r)
-		if r.action == 'desc':
+		elif r.action == 'desc':
 			if on:
 				stop(r)
 				task = r.desc
 				start(r)
+				last_tick = r.ts
 			else:
 				task = r.desc
+		elif r.action == 'tick':
+			if not use_ticks:
+				use_ticks = True
+				if verbose: print('activating ticks processing')
+			last_tick = r.ts
+		else:
+			raise(Exception('unexpected action:%s'%[r.action]))
 	#print()
 	was_on = on
-	now = datetime.datetime.now(datetime.timezone.utc)
-	stop(Rec('off', now, ''))
+	fake_stop(get_now())
 	return runs, was_on
 
 def report2():
 	result = []
 	runs, on = report1()
 	for (task,durations) in runs:
-		result.append((task, sum(durations, datetime.timedelta())))
+		result.append((task, sum(durations, datetime.timedelta()))) #start=
 	return result, on
 
 
@@ -84,8 +113,34 @@ def dump2():
 		print (str(duration), task)
 	return on
 
-#def report3():
-#	runs = defaultdict(list)
+def dump3(do_print=True):
+	lines,on = report2()
+	output = defaultdict(datetime.timedelta)
+	aliases = {
+		'depreciation':'depreciation_ui',
+		'open_sourcing':'cleanup, open-sourcing reorg',
+		'code cleanup':'cleanup, open-sourcing reorg',
+		'cleanup':'cleanup, open-sourcing reorg',
+		'that_was_testrunner':'tests_framework',
+		'prolog_stuff':'prolog_rdf_stuff',
+		'depreciation_new':'depreciation_ui',
+		# todo move 3h from livestock to tests_framework
+	}
+	for (task,duration) in lines:
+		if task in aliases:
+			task = aliases[task]
+		output[task] += duration
+	if do_print:
+		for task,duration in output.items():
+			print (str(duration), task)
+	return output,on
+
+def csv():
+	print('#hours\ttask')
+	lines,on = dump3(False)
+	for task,duration in lines.items():
+		#import IPython; IPython.embed()
+		print(task, '\t', round(duration.total_seconds()/60/60, 1))
 
 def noncritical_call(args):
 	try:
@@ -128,16 +183,26 @@ if arg in ['on', 'off', 'desc']:
 elif arg == 'dump0':
 	for r in report0():
 		print(r)
+elif arg == 'dump0b':
+	for r in report1(verbose=True):
+		pass
 elif arg == 'dump1':
 	for i in report1()[0]:
 		print (i)
 elif arg == 'dump2':
 	dump2()
-elif arg == 'info':
+elif arg == 'dump3':
 	if dump2():
 		print('running.')
 	else:
 		print('stopped.')
+elif arg == 'info':
+	if dump3():
+		print('running.')
+	else:
+		print('stopped.')
+elif arg == 'csv':
+	csv()
 elif arg == 'is_on':
 	if report2()[1]:
 		print('yep')
@@ -156,6 +221,8 @@ elif arg == 'tick':
 	if report2()[1]:
 		print('yep')
 		store('tick', '')
-		
+#elif arg == 'rename':
+#	store('rename', '')
+
 else:
 	raise('unknown command')
