@@ -197,7 +197,7 @@ elif arg == 'dump3':
 	else:
 		print('stopped.')
 elif arg == 'info':
-	if dump3():
+	if dump3()[1]:
 		print('running.')
 	else:
 		print('stopped.')
