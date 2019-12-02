@@ -68,7 +68,7 @@ def report1(verbose = False):
 			if last_tick == None:
 				raise('wtf')
 			if at_time - last_tick > datetime.timedelta(minutes=5):
-				if verbose:	print('lack of ticks, stopping')
+				if verbose:	print('lack of ticks, stopping at %s'%last_tick)
 				fake_stop(last_tick)
 
 	for r in report0():
@@ -92,10 +92,14 @@ def report1(verbose = False):
 				use_ticks = True
 				if verbose: print('activating ticks processing')
 			last_tick = r.ts
+		elif r.action == 'error':
+			print(r)
+			#print('%s:%s'%(r.action,r.desc))
 		else:
 			raise(Exception('unexpected action:%s'%[r.action]))
 	#print()
 	was_on = on
+	check_last_tick(get_now())
 	fake_stop(get_now())
 	return runs, was_on
 
@@ -167,19 +171,52 @@ def notify_running_change(on, arg):
 		msg = 'stop'
 	notify(msg)
 
-arg = sys.argv[1]
-if arg in ['on', 'off', 'desc']:
+
+def tick():
+	try:
+		secs = int(subprocess.check_output([os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/tt_xprintidle')])) / 1000
+		store('tick', 'idle:%ss'%secs)
+		if secs > 8 * 60:
+			print('idle, stopping')
+			do_stop('idle:%ss'%secs)
+	except Exception as e:
+		store('error', str(e))
+		raise e
+
+
+def do_start():
+	arg = 'on'
 	misc = ''
-	if arg == 'desc':
-		misc = sys.argv[2]
-	if arg == 'on' and len(sys.argv) > 2:
+	if len(sys.argv) > 2:
 		store('desc', sys.argv[2])
 	old = dump2()
 	store(arg, misc)
-	if arg in ('on','off'):
-		notify_running_change(old, arg)
-	if arg == 'on':
-		noncritical_call(['/home/koom/unixy_time_tracker/tt_beep'])
+	notify_running_change(old, arg)
+	noncritical_call(['/home/koom/unixy_time_tracker/tt_beep'])
+
+def do_stop(note):
+	arg = 'off'
+	old = dump2()
+	store(arg, note)
+	notify_running_change(old, arg)
+
+def do_desc():
+	arg = 'desc'
+	misc = ''
+	misc = sys.argv[2]
+	store(arg, misc)
+
+arg = sys.argv[1]
+if arg == 'on':
+	do_start()
+elif arg == 'off':
+	if len(sys.argv) > 2:
+		note = sys.argv[2]
+	else:
+		note = ''
+	do_stop(note)
+elif arg == 'desc':
+	do_desc()
 elif arg == 'dump0':
 	for r in report0():
 		print(r)
@@ -220,7 +257,7 @@ elif arg == 'is_on':
 elif arg == 'tick':
 	if report2()[1]:
 		print('yep')
-		store('tick', '')
+		tick()
 #elif arg == 'rename':
 #	store('rename', '')
 
