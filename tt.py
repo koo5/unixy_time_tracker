@@ -50,11 +50,13 @@ def report1(verbose = False):
 		nonlocal on
 		if on:
 			on = False
-			last_run = r.ts - last_start
-			if len(runs) and runs[-1][0] == task:
-				runs[-1] = (task, runs[-1][1] + [last_run])
-			else:
-				runs.append((task, [last_run]))
+			add_task_time(task, r.ts - last_start)
+
+	def add_task_time(task, delta):
+		if len(runs) and runs[-1][0] == task:
+			runs[-1] = (task, runs[-1][1] + [delta])
+		else:
+			runs.append((task, [delta]))
 
 	def get_now():
 		return datetime.datetime.now(datetime.timezone.utc)
@@ -95,6 +97,8 @@ def report1(verbose = False):
 		elif r.action == 'error':
 			print(r)
 			#print('%s:%s'%(r.action,r.desc))
+		elif r.action == 'add_hours':
+			add_task_time(task, datetime.timedelta(hours=float(r.desc)))
 		else:
 			raise(Exception('unexpected action:%s'%[r.action]))
 	#print()
@@ -146,21 +150,26 @@ def csv():
 		#import IPython; IPython.embed()
 		print(task, '\t', round(duration.total_seconds()/60/60, 1))
 
+def noncritical_tt_script(script, args):
+	return noncritical_call([tt_file(script)] + args)
+
 def noncritical_call(args):
 	try:
 		subprocess.check_call(args, timeout=5)
 	except Exception as err:
 		print("error: {0}".format(err))
 
+def tt_file(x):
+	return os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/'+x)
+
 def notify(text):
-	ico = os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/ufo_by_telepatx_d2ne2p4-fullview2.ico')
-	noncritical_call(['notify-send', '-i', ico, 'unixy_time_tracker', text])
+	ico = tt_file('ufo_by_telepatx_d2ne2p4-fullview2.ico')
+	noncritical_tt_script('notify.sh', ['-i', ico, 'unixy_time_tracker', text])
 
 def notify_running_change(on, arg):
 	print (arg)
 	start = arg == 'on'
 	stop = not start
-	
 	if start and not on:
 		msg = 'start'
 	elif start and on:
@@ -202,7 +211,6 @@ def do_stop(note):
 
 def do_desc():
 	arg = 'desc'
-	misc = ''
 	misc = sys.argv[2]
 	store(arg, misc)
 
@@ -258,6 +266,9 @@ elif arg == 'tick':
 	if report2()[1]:
 		print('yep')
 		tick()
+elif arg == 'add_hours':
+	float(sys.argv[2])
+	store('add_hours', sys.argv[2])
 #elif arg == 'rename':
 #	store('rename', '')
 

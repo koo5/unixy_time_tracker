@@ -4,7 +4,7 @@ import subprocess
 
 try:
 	secs = int(subprocess.check_output(['xprintidle'])) / 1000
-	if secs > 10 * 60:
+	if secs > 8 * 60:
 		if subprocess.call(['tt_is_on']) == 0:
 			print('idle, turning tt off')
 			subprocess.check_call(['tt', 'off', str(secs) + 'secs idle'])
