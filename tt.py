@@ -143,12 +143,12 @@ def dump3(do_print=True):
 			print (str(duration), task)
 	return output,on
 
-def csv():
-	print('#hours\ttask')
-	lines,on = dump3(False)
+def dump_csv():
+	print('#hours;task')
+	lines,_on = dump3(False)
 	for task,duration in lines.items():
 		#import IPython; IPython.embed()
-		print(task, '\t', round(duration.total_seconds()/60/60, 1))
+		print(str(task)+';'+str(round(duration.total_seconds()/60/60, 1)))
 
 def noncritical_tt_script(script, args):
 	return noncritical_call([tt_file(script)] + args)
@@ -185,7 +185,7 @@ def tick():
 	try:
 		secs = int(subprocess.check_output([os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/tt_xprintidle')])) / 1000
 		store('tick', 'idle:%ss'%secs)
-		if secs > 8 * 60:
+		if secs > 15 * 60:
 			print('idle, stopping')
 			do_stop('idle:%ss'%secs)
 	except Exception as e:
@@ -247,7 +247,7 @@ elif arg == 'info':
 	else:
 		print('stopped.')
 elif arg == 'csv':
-	csv()
+	dump_csv()
 elif arg == 'is_on':
 	if report2()[1]:
 		print('yep')
@@ -274,3 +274,6 @@ elif arg == 'add_hours':
 
 else:
 	raise('unknown command')
+
+# delete from hours where ts < '2020-05-01 02:18:14.05933+01';
+# update hours set misc = 'documentation' where misc = 'docs';
