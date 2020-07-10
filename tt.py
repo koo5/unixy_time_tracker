@@ -275,5 +275,5 @@ elif arg == 'add_hours':
 else:
 	raise('unknown command')
 
-# delete from hours where ts < '2020-05-01 02:18:14.05933+01';
+# delete from hours where ts < '2020-05-01 00:00:14.05933+01';
 # update hours set misc = 'documentation' where misc = 'docs';
