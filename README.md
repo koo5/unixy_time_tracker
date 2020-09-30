@@ -28,7 +28,6 @@ set up keyboard shortcuts, if desired:
 "ctrl + alt + [" to "tt on"
 "ctrl + alt + ]" to "tt off"
 
-
 ```
 koom@dev ~/unixy_time_tracker (master) [1]> tt on "boring task 1"
 db updated.
