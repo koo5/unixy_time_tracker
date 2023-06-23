@@ -28,9 +28,9 @@ crontab cron/unixy_time_tracker
 ```
 
 ## add this directory to your PATH (fish)
-``
+```
 set -U fish_user_paths $fish_user_paths ~/unixy_time_tracker/
-``
+```
 
 ## setup postgres
 ```
@@ -42,10 +42,11 @@ sudo --login --user=postgres psql -c "grant all privileges on database hours to 
 
 
 ## set up keyboard shortcuts:
+```
 "ctrl + alt + [" to "~/unixy_time_tracker/tt on"
 "ctrl + alt + ]" to "~/unixy_time_tracker/tt off"
-
 ```
+
 
 
 # sample interaction
