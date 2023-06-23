@@ -12,9 +12,11 @@ sudo apt install xprintidle postgresql mplayer python3-psycopg2 libnotify-bin
 ```
 
 ## make sure notifications work:
-```notify-send --expire-time=3000  Test "Hello World"```
 ```
-if necessary, try:
+./notify.sh --expire-time=3000  Test "Hello World"
+```
+if necessary, try running:
+```
 xfce4-notifyd-config
 /usr/lib/x86_64-linux-gnu/xfce4/notifyd/xfce4-notifyd
 ```
