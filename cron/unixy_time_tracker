@@ -1,1 +1,1 @@
-*/1 * 	* * *	koom	/home/koom/unixy_time_tracker/tt is_on && (/home/koom/unixy_time_tracker/tt_beep && /home/koom/unixy_time_tracker/tt tick && /home/koom/unixy_time_tracker/notify.sh -t 3000 "tt tick" `date`) 2>&1 | logger -t tt
+*/1 * 	* * *	/home/koom/unixy_time_tracker/tt is_on && (/home/koom/unixy_time_tracker/tt_beep && /home/koom/unixy_time_tracker/tt tick && /home/koom/unixy_time_tracker/notify.sh -t 3000 "tt tick" `date`) 2>&1 | logger -t tt

@@ -1,14 +1,17 @@
 # unixy_time_tracker
 inspired by upwork's time tracker app. python. postgresql. cron. mplayer. xprintidle. 
 
-alternatives: https://github.com/meetmangukiya/bth-py
+## alternatives
+https://github.com/meetmangukiya/bth-py
 
 # setup
+
+## dependencies
 ```
 sudo apt install xprintidle postgresql mplayer python3-psycopg2 libnotify-bin
 ```
 
-# make sure notifications work:
+## make sure notifications work:
 ```notify-send --expire-time=3000  Test "Hello World"```
 ```
 if necessary, try:
@@ -16,13 +19,18 @@ xfce4-notifyd-config
 /usr/lib/x86_64-linux-gnu/xfce4/notifyd/xfce4-notifyd
 ```
 
-change "user" and:```
-cat cron_entries >> /etc/crontab
+## install cron job
+
+```
+crontab cron/unixy_time_tracker
 ```
 
-add this directory to your PATH
+## add this directory to your PATH (fish)
+``
+set -U fish_user_paths $fish_user_paths ~/unixy_time_tracker/
+``
 
-setup postgres:
+## setup postgres
 ```
 sudo --login --user=postgres psql -c "create user hours;"
 sudo --login --user=postgres psql -c "alter user hours with password 'hours';"
@@ -31,9 +39,9 @@ sudo --login --user=postgres psql -c "grant all privileges on database hours to 
 ```
 
 
-set up keyboard shortcuts, if desired:
-"ctrl + alt + [" to "tt on"
-"ctrl + alt + ]" to "tt off"
+## set up keyboard shortcuts:
+"ctrl + alt + [" to "~/unixy_time_tracker/tt on"
+"ctrl + alt + ]" to "~/unixy_time_tracker/tt off"
 
 ```
 
