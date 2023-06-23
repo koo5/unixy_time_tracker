@@ -5,7 +5,7 @@ alternatives: https://github.com/meetmangukiya/bth-py
 
 # setup
 ```
-sudo apt install xprintidle postgresql mplayer
+sudo apt install xprintidle postgresql mplayer python3-psycopg2 libnotify-bin
 ```
 
 # make sure notifications work:
@@ -22,7 +22,14 @@ cat cron_entries >> /etc/crontab
 
 add this directory to your PATH
 
-setup postgres: todo
+setup postgres:
+```
+sudo --login --user=postgres psql -c "create user hours;"
+sudo --login --user=postgres psql -c "alter user hours with password 'hours';"
+sudo --login --user=postgres pg_restore -c -C -s -v -d hours < hours_db
+sudo --login --user=postgres psql -c "grant all privileges on database hours to hours;"
+```
+
 
 set up keyboard shortcuts, if desired:
 "ctrl + alt + [" to "tt on"
@@ -30,6 +37,8 @@ set up keyboard shortcuts, if desired:
 
 ```
 
+
+# sample interaction
 ```
 koom@dev ~/unixy_time_tracker (master) [1]> tt on "boring task 1"
 db updated.
@@ -147,3 +156,10 @@ boring task 1;0.0
 boring task 2;0.0
 koom@dev ~/unixy_time_tracker (master)> 
 ```
+
+
+# useful queries
+```
+﻿delete from hours where ts < '2020-06-01 00:00:14.05933+01';
+```
+

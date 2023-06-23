@@ -1,1 +1,0 @@
-﻿delete from hours where ts < '2020-06-01 00:00:14.05933+01';

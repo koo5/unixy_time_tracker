@@ -13,7 +13,7 @@ def print_rec_nice(r):
 	print(str(r.ts), r.action, r.desc)
 
 def make_conn():
-	conn = psycopg2.connect("dbname=hours user=hours password=hours")
+	conn = psycopg2.connect("host=127.0.0.1 dbname=hours user=hours password=hours")
 	return conn
 
 def store(action, misc):
@@ -144,7 +144,7 @@ def dump3(do_print=True):
 	return output,on
 
 def dump_csv():
-	print('#hours;task')
+	print('#task;hours')
 	lines,_on = dump3(False)
 	for task,duration in lines.items():
 		#import IPython; IPython.embed()

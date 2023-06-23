@@ -1,1 +1,0 @@
-*/1 * 	* * *	koom	/home/koom/unixy_time_tracker/tt is_on && (/home/koom/unixy_time_tracker/tt_beep && /home/koom/unixy_time_tracker/tt tick) 2>&1 | logger -t tt
