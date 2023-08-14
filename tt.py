@@ -32,6 +32,15 @@ def report0():
 				yield Rec(*r)
 
 
+def report_current_desc():
+	sql = """SELECT * FROM hours WHERE action='desc' ORDER BY ts DESC LIMIT 1;"""
+	with make_conn() as conn:
+		with conn.cursor() as curs:
+			curs.execute(sql)
+			for r in curs.fetchall():
+				return Rec(*r).desc
+	return '?????'
+
 def report1(verbose = False):
 	runs = []
 	on = False
@@ -105,11 +114,11 @@ def report1(verbose = False):
 	was_on = on
 	check_last_tick(get_now())
 	fake_stop(get_now())
-	return runs, was_on
+	return runs, was_on, task
 
 def report2():
 	result = []
-	runs, on = report1()
+	runs, on, _ = report1()
 	for (task,durations) in runs:
 		result.append((task, sum(durations, datetime.timedelta()))) #start=
 	return result, on
@@ -178,6 +187,7 @@ def notify_running_change(on, arg):
 		msg = 'already off'
 	elif stop and on:
 		msg = 'stop'
+	msg += ' ' + report_current_desc()
 	notify(msg)
 
 

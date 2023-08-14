@@ -115,7 +115,13 @@ boring task 2;0.0
 
 
 # useful queries
+
+```
+PGPASSWORD='hours' psql -h localhost -U hours -d hours # -c "query"
+```
+
 ```
 ﻿delete from hours where ts < '2020-06-01 00:00:14.05933+01';
 ```
+
 
