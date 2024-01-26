@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import locale
 import os
 import sys
 import psycopg2
@@ -152,12 +153,14 @@ def dump3(do_print=True):
 			print (str(duration), task)
 	return output,on
 
-def dump_csv():
+def dump_csv(custom_locale=None):
 	print('#task;hours')
 	lines,_on = dump3(False)
+	if custom_locale:
+		locale.setlocale(locale.LC_ALL, custom_locale)
 	for task,duration in lines.items():
-		#import IPython; IPython.embed()
-		print(str(task)+';'+str(round(duration.total_seconds()/60/60, 1)))
+		hours = duration.total_seconds()/60/60
+		print(str(task)+';'+locale.format('%.1f', hours))
 
 def noncritical_tt_script(script, args):
 	return noncritical_call([tt_file(script)] + args)
@@ -258,6 +261,8 @@ elif arg == 'info':
 		print('stopped.')
 elif arg == 'csv':
 	dump_csv()
+elif arg == 'csv2':
+	dump_csv('cs_CZ')
 elif arg == 'is_on':
 	if report2()[1]:
 		print('yep')
