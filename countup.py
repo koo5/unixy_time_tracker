@@ -9,6 +9,9 @@ class App:
         self.root = root
         self.root.title("Countup Timer")
         
+        # Adjust window size and position here
+        self.root.geometry("+0+0")  # This positions the window at the absolute 0,0
+        
         self.maximize_window_compatible()
 
         self.start_time = datetime.now()
@@ -22,7 +25,7 @@ class App:
         # Ensure the root window can capture key events
         self.root.focus_set()
         self.root.bind('<Escape>', self.toggle_counting)  # Bind Escape key to toggle counting
-        self.speaks=[]
+        self.speaks = []
         self.update_clock()
 
     def maximize_window_compatible(self):
@@ -31,10 +34,10 @@ class App:
         except tk.TclError:
             self.root.attributes('-zoomed', True)  # For Linux
         except:
-            # Fallback method: manually setting window size to screen size
+            # Set window size to screen size and position to top-left corner
             width = self.root.winfo_screenwidth()
             height = self.root.winfo_screenheight()
-            self.root.geometry(f"{width}x{height}+100+0")
+            self.root.geometry(f"{width}x{height}+0+0")
 
     def toggle_counting(self, event=None):
         if self.running:
@@ -51,7 +54,6 @@ class App:
                 self.root.destroy()  # Exit app if Escape is pressed again after resuming
 
     def speak_elapsed_time(self, seconds):
-        # Speak the elapsed time if a new second has passed
         if seconds != self.previous_second:
             thread = threading.Thread(target=self.speak_elapsed_time_thread, args=(seconds,))
             thread.start()
@@ -67,16 +69,14 @@ class App:
         seconds = self.elapsed.seconds
         millis = self.elapsed.microseconds // 1000
         for t in self.speaks:
-        	t.join()
+            t.join()
         os.system(f'espeak "{seconds} seconds, {millis} milliseconds"&')
-
 
     def update_clock(self):
         if self.running:
             now = datetime.now()
             self.elapsed = now - self.start_time
             seconds = self.elapsed.seconds
-            # Format elapsed time to include hours, minutes, seconds, and tenths of seconds
             elapsed_str = '{:02d}:{:02d}:{:02d}.{:03d}'.format(
                 seconds // 3600,
                 (seconds // 60) % 60,
