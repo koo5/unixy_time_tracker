@@ -33,14 +33,33 @@ def report0():
 				yield Rec(*r)
 
 
-def report_current_desc():
-	sql = """SELECT * FROM hours WHERE action='desc' ORDER BY ts DESC LIMIT 1;"""
+
+def one(sql):
 	with make_conn() as conn:
 		with conn.cursor() as curs:
 			curs.execute(sql)
 			for r in curs.fetchall():
-				return Rec(*r).desc
+				return Rec(*r)
+
+
+def report_current_desc():
+	r = one("""SELECT * FROM hours WHERE action='desc' ORDER BY ts DESC LIMIT 1;""")
+	if r:
+		return r.desc
 	return '?????'
+
+
+
+
+def last_on():
+	return one("""SELECT * FROM hours WHERE action='on' ORDER BY ts DESC LIMIT 1;""")
+
+
+
+def get_now():
+	return datetime.datetime.now(datetime.timezone.utc)
+
+
 
 def report1(verbose = False):
 	runs = []
@@ -67,9 +86,6 @@ def report1(verbose = False):
 			runs[-1] = (task, runs[-1][1] + [delta])
 		else:
 			runs.append((task, [delta]))
-
-	def get_now():
-		return datetime.datetime.now(datetime.timezone.utc)
 
 	def fake_stop(at_time):
 		stop(Rec('off', at_time, ''))
@@ -117,6 +133,8 @@ def report1(verbose = False):
 	fake_stop(get_now())
 	return runs, was_on, task
 
+
+
 def report2():
 	result = []
 	runs, on, _ = report1()
@@ -125,11 +143,14 @@ def report2():
 	return result, on
 
 
+
 def dump2():
 	lines,on = report2()
 	for (task,duration) in lines:
 		print (str(duration), task)
 	return on
+
+
 
 def dump3(do_print=True):
 	lines,on = report2()
@@ -153,6 +174,8 @@ def dump3(do_print=True):
 			print (str(duration), task)
 	return output,on
 
+
+
 def dump_csv(custom_locale=None):
 	print('#task;hours')
 	lines,_on = dump3(False)
@@ -162,8 +185,12 @@ def dump_csv(custom_locale=None):
 		hours = duration.total_seconds()/60/60
 		print(str(task)+';'+locale.format('%.1f', hours))
 
+
+
 def noncritical_tt_script(script, args):
 	return noncritical_call([tt_file(script)] + args)
+
+
 
 def noncritical_call(args):
 	try:
@@ -171,12 +198,18 @@ def noncritical_call(args):
 	except Exception as err:
 		print("error: {0}".format(err))
 
+
+
 def tt_file(x):
 	return os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/'+x)
+
+
 
 def notify(text):
 	ico = tt_file('ufo_by_telepatx_d2ne2p4-fullview2.ico')
 	noncritical_tt_script('notify.sh', ['-i', ico, 'unixy_time_tracker', text])
+
+
 
 def notify_running_change(on, arg):
 	print (arg)
@@ -189,9 +222,15 @@ def notify_running_change(on, arg):
 	elif stop and not on:
 		msg = 'already off'
 	elif stop and on:
-		msg = 'stop'
-	msg += ' ' + report_current_desc()
+		l = last_on()
+		if l:
+			runtime = str(get_now() - l.ts)
+		else:
+			runtime = '???'
+		msg = 'stop after %s'%runtime
+	msg += ', ' + report_current_desc()
 	notify(msg)
+
 
 
 def tick():
@@ -204,6 +243,11 @@ def tick():
 	except Exception as e:
 		store('error', str(e))
 		raise e
+
+
+
+last_start = None
+
 
 
 def do_start():
