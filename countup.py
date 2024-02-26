@@ -3,6 +3,9 @@ import threading
 import tkinter as tk
 from datetime import datetime
 import os
+from babel.dates import format_timedelta
+
+
 
 class App:
     def __init__(self, root):
@@ -70,7 +73,11 @@ class App:
         millis = self.elapsed.microseconds // 1000
         for t in self.speaks:
             t.join()
-        os.system(f'espeak "{seconds} seconds, {millis} milliseconds"&')
+        #os.system(f'espeak "{seconds} seconds, {millis} milliseconds"&')
+        # from babel.dates import format_timedelta
+        #locale = 'cs_CZ'
+        #verbalization = format_timedelta(delta, locale=locale)
+        os.system(f'sleep 1; espeak  -v czech "{seconds} sekund, {millis} milisekund"&')
 
     def update_clock(self):
         if self.running:
@@ -83,8 +90,8 @@ class App:
                 seconds % 60,
                 self.elapsed.microseconds // 1000)
             self.label.config(text=elapsed_str)
-            self.speak_elapsed_time(seconds)
-            self.root.after(100, self.update_clock)
+            #self.speak_elapsed_time(seconds)
+            self.root.after(3, self.update_clock)
 
 if __name__ == "__main__":
     root = tk.Tk()
