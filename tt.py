@@ -207,7 +207,7 @@ def tt_file(x):
 
 def notify(text):
 	ico = tt_file('ufo_by_telepatx_d2ne2p4-fullview2.ico')
-	noncritical_tt_script('notify.sh', ['-i', ico, 'unixy_time_tracker', text])
+	noncritical_tt_script('notify.sh', ['-i', ico, text])
 
 
 
@@ -224,7 +224,10 @@ def notify_running_change(on, arg):
 	elif stop and on:
 		l = last_on()
 		if l:
-			runtime = str(get_now() - l.ts)
+			d = datetime.timedelta(seconds=
+			int((get_now() - l.ts).total_seconds()))
+			#d.millis = 0
+			runtime = str(d)
 		else:
 			runtime = '???'
 		msg = 'stop after %s'%runtime
