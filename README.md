@@ -149,3 +149,16 @@ sudo -u postgres pg_dump -d hours > (hostname)/dump
 ```
 PGPASSWORD='hours' psql -h localhost -U hours -d hours -f other/dump
 ```
+
+
+# general usage
+
+(run the report)
+```
+tt csv > (hostname)/csv
+```
+(purge the hours table))
+```
+PGPASSWORD='hours' psql -h localhost -U hours -d hours -c "delete from hours"
+```
+
