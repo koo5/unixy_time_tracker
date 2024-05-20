@@ -125,3 +125,27 @@ PGPASSWORD='hours' psql -h localhost -U hours -d hours # -c "query"
 ```
 
 
+# merge multiple databases
+(create a working directory)
+```
+ md ~/hours/(date --iso)
+ mkdir (hostname)
+ mkdir other
+```
+(backup local really thoroughly)
+```
+sudo -u postgres pg_dump -d hours > (hostname)/dump
+PGPASSWORD='hours' psql -h localhost -U hours -d hours -c "select * from hours order by ts;" > (hostname)/select
+tt csv > (hostname)/csv
+tt info > (hostname)/info
+```
+(dump on remote)
+```
+sudo -u postgres pg_dump -d hours > (hostname)/dump
+```
+(mount or copy the remote directory to `other`)
+
+(load the dump)
+```
+PGPASSWORD='hours' psql -h localhost -U hours -d hours -f other/dump
+```
