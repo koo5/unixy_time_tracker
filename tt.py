@@ -68,6 +68,7 @@ def report1(verbose = False):
 	last_start = None
 	last_tick = None
 	use_ticks = False
+	last_active = None
 
 	def start(r):
 		nonlocal on, last_start
@@ -91,13 +92,24 @@ def report1(verbose = False):
 		stop(Rec('off', at_time, ''))
 
 	def check_last_tick(at_time):
-		nonlocal last_tick, on
+		nonlocal last_tick, last_active, on
 		if use_ticks and on:
 			if last_tick == None:
 				raise('wtf')
 			if at_time - last_tick > datetime.timedelta(minutes=5):
-				if verbose:	print('lack of ticks, stopping at %s'%last_tick)
+				if verbose:
+					print('lack of ticks, stopping at %s'%last_tick)
 				fake_stop(last_tick)
+			tick_last_active = at_time - datetime.timedelta(seconds=tick_xidle)
+			if last_active is None or last_active < tick_last_active:
+				last_active = tick_last_active
+				if verbose:
+					print('last active: %s'%last_active)
+			if at_time - last_active > datetime.timedelta(minutes=15):
+				if verbose:
+					print('idle, stopping at %s'%last_active)
+				fake_stop(last_tick)
+
 
 	for r in report0():
 		if verbose: print_rec_nice(r)
@@ -105,6 +117,7 @@ def report1(verbose = False):
 		if r.action == 'on':
 			start(r)
 			last_tick = r.ts
+			tick_xidle = 0
 		elif r.action == 'off':
 			stop(r)
 		elif r.action == 'desc':
@@ -113,6 +126,7 @@ def report1(verbose = False):
 				task = r.desc
 				start(r)
 				last_tick = r.ts
+				last_xidle = 0
 			else:
 				task = r.desc
 		elif r.action == 'tick':
@@ -120,6 +134,10 @@ def report1(verbose = False):
 				use_ticks = True
 				if verbose: print('activating ticks processing')
 			last_tick = r.ts
+			try:
+				tick_xidle = int(r.desc)
+			except:
+				tick_xidle = 9999999
 		elif r.action == 'error':
 			print(r)
 			#print('%s:%s'%(r.action,r.desc))
@@ -138,8 +156,11 @@ def report1(verbose = False):
 def report2():
 	result = []
 	runs, on, _ = report1()
+	print(runs)
+	print(on)
 	for (task,durations) in runs:
 		result.append((task, sum(durations, datetime.timedelta()))) #start=
+	print(result)
 	return result, on
 
 
@@ -239,10 +260,10 @@ def notify_running_change(on, arg):
 def tick():
 	try:
 		secs = int(subprocess.check_output([os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/tt_xprintidle')])) / 1000
-		store('tick', 'idle:%ss'%secs)
-		if secs > 15 * 60:
-			print('idle, stopping')
-			do_stop('idle:%ss'%secs)
+		store('tick', secs)
+		# if secs > 15 * 60:
+		# 	print('idle, stopping')
+		# 	do_stop('idle:%ss'%secs)
 	except Exception as e:
 		store('error', str(e))
 		raise e
