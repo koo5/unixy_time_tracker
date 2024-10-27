@@ -14,7 +14,7 @@ def print_rec_nice(r):
 	print(str(r.ts), r.action, r.desc)
 
 def make_conn():
-	conn = psycopg2.connect("host=127.0.0.1 dbname=hours user=hours password=hours")
+	conn = psycopg2.connect("host=hours.internal dbname=hours user=hours password=hours")
 	return conn
 
 def store(action, misc):
