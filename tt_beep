@@ -1,5 +1,3 @@
 #!/bin/bash
 export XDG_RUNTIME_DIR="/run/user/1000"
-#mplayer /usr/share/sounds/KDE-Im-Contact-In.ogg
-mplayer /usr/share/sounds/Oxygen-Im-User-Auth.ogg
-#
+mpv /usr/share/sounds/Oxygen-Im-User-Auth.ogg

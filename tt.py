@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import locale
 import os
 import sys
@@ -8,20 +8,21 @@ from collections import defaultdict, namedtuple
 import datetime
 import subprocess
 
-Rec = namedtuple('Rec', ['action', 'ts', 'desc'])
+host = os.uname().nodename
+Rec = namedtuple('Rec', ['action', 'ts', 'desc', 'xidle', 'host'])
 
 def print_rec_nice(r):
-	print(str(r.ts), r.action, r.desc)
+	print(str(r.ts), r.host, r.action, r.desc, r.xidle)
 
 def make_conn():
 	conn = psycopg2.connect("host=hours.internal dbname=hours user=hours password=hours")
 	return conn
 
-def store(action, misc):
-	sql = """INSERT INTO hours(ts,action,misc) VALUES(CURRENT_TIMESTAMP, %s, %s);"""
+def store(action, desc=None, xidle=None):
+	sql = """INSERT INTO hours(ts,action,host,"desc",xidle) VALUES(CURRENT_TIMESTAMP, %s, %s, %s, %s);"""
 	with make_conn() as conn:
 		with conn.cursor() as curs:
-			curs.execute(sql, (action, misc))
+			curs.execute(sql, (action, host, desc, xidle))
 	print('db updated.')
 
 def report0():
@@ -30,7 +31,10 @@ def report0():
 		with conn.cursor() as curs:
 			curs.execute(sql)
 			for r in curs.fetchall():
-				yield Rec(*r)
+				#print('SELECT * r:', r)
+				r = Rec(*r)
+				#print('>>>:', r)
+				yield r
 
 
 
@@ -50,7 +54,6 @@ def report_current_desc():
 
 
 
-
 def last_on():
 	return one("""SELECT * FROM hours WHERE action='on' ORDER BY ts DESC LIMIT 1;""")
 
@@ -62,25 +65,21 @@ def get_now():
 
 
 def report1(verbose = False):
+	"""
+
+replay all records and produce list of tuples (task, [durations])
+we have to take into account that there are ticks coming from different machines, with different xidle values.
+a run is an uninterrupted stream of activity, testified by ticks with some minimal xidle value.
+
+
+	"""
+
 	runs = []
 	on = False
 	task = '???'
 	last_start = None
-	last_tick = None
-	use_ticks = False
-	last_active = None
+	last_activity = None
 
-	def start(r):
-		nonlocal on, last_start
-		if not on:
-			on = True
-			last_start = r.ts
-
-	def stop(r):
-		nonlocal on
-		if on:
-			on = False
-			add_task_time(task, r.ts - last_start)
 
 	def add_task_time(task, delta):
 		if len(runs) and runs[-1][0] == task:
@@ -88,67 +87,89 @@ def report1(verbose = False):
 		else:
 			runs.append((task, [delta]))
 
-	def fake_stop(at_time):
-		stop(Rec('off', at_time, ''))
+	def start(r):
+		nonlocal on, last_start
+		if not on:
+			on = True
+			last_start = r.ts
 
-	def check_last_tick(at_time):
-		nonlocal last_tick, last_active, on
-		if use_ticks and on:
-			if last_tick == None:
-				raise('wtf')
-			if at_time - last_tick > datetime.timedelta(minutes=5):
-				if verbose:
-					print('lack of ticks, stopping at %s'%last_tick)
-				fake_stop(last_tick)
-			tick_last_active = at_time - datetime.timedelta(seconds=tick_xidle)
-			if last_active is None or last_active < tick_last_active:
-				last_active = tick_last_active
-				if verbose:
-					print('last active: %s'%last_active)
-			if at_time - last_active > datetime.timedelta(minutes=15):
-				if verbose:
-					print('idle, stopping at %s'%last_active)
-				fake_stop(last_tick)
+	def stop(at_time):
+		nonlocal on
+		if on:
+			print('stop at %s'%at_time)
+			on = False
+			add_task_time(task, at_time - last_start)
+
+	records = list(report0())
+
+	#print('got records:')
+	#for record in records:
+		#print('record:', record)
 
 
-	for r in report0():
-		if verbose: print_rec_nice(r)
-		check_last_tick(r.ts)
-		if r.action == 'on':
-			start(r)
-			last_tick = r.ts
-			tick_xidle = 0
-		elif r.action == 'off':
-			stop(r)
-		elif r.action == 'desc':
-			if on:
-				stop(r)
-				task = r.desc
-				start(r)
-				last_tick = r.ts
-				last_xidle = 0
-			else:
-				task = r.desc
-		elif r.action == 'tick':
-			if not use_ticks:
-				use_ticks = True
-				if verbose: print('activating ticks processing')
-			last_tick = r.ts
-			try:
-				tick_xidle = int(r.desc)
-			except:
-				tick_xidle = 9999999
-		elif r.action == 'error':
-			print(r)
-			#print('%s:%s'%(r.action,r.desc))
-		elif r.action == 'add_hours':
-			add_task_time(task, datetime.timedelta(hours=float(r.desc)))
+	if len(records) == 0:
+		return [], False, '??'
+
+	print('starting loop over minutes')
+
+
+	at_time = records[0].ts
+	at_record_index = 0
+
+	was_on = False
+
+	while True:
+
+		if at_record_index >= len(records):
+			print('end of records.')
+			was_on = on
+			stop(at_time)
+			break
+
+		# find all records that happened in the same minute
+		records_in_minute = []
+		while at_record_index < len(records) and records[at_record_index].ts < at_time + datetime.timedelta(minutes=1):
+			records_in_minute.append(records[at_record_index])
+			at_record_index += 1
+
+		if len(records_in_minute) == 0:
+			print('no records in minute')
 		else:
-			raise(Exception('unexpected action:%s'%[r.action]))
-	#print()
-	was_on = on
-	check_last_tick(get_now())
-	fake_stop(get_now())
+			print('records_in_minute:')
+
+			# process all records in the minute
+			for r in records_in_minute:
+				print_rec_nice(r)
+				if r.action == 'on':
+					last_activity = r.ts
+					start(r)
+				elif r.action == 'off':
+					stop(at_time)
+				elif r.action == 'desc':
+					last_activity = r.ts
+					task = r.desc
+				elif r.action == 'tick':
+					if not on:
+						continue
+					tick_last_activity = r.ts - datetime.timedelta(seconds=int(r.xidle))
+					print('last_activity:', last_activity, 'tick_last_activity:', tick_last_activity)
+					if last_activity is None or last_activity < tick_last_activity:
+						last_activity = tick_last_activity
+						print('update last_activity to:', last_activity)
+				elif r.action == 'error':
+					print(r)
+				elif r.action == 'add_hours':
+					add_task_time(task, datetime.timedelta(hours=float(r.desc)))
+				else:
+					raise(Exception('unexpected action:%s'%[r.action]))
+
+			if on:
+				if at_time - last_activity > datetime.timedelta(minutes=5):
+					print('idle, stopping at %s'%last_activity)
+					stop(at_time)
+
+		at_time += datetime.timedelta(minutes=1)
+
 	return runs, was_on, task
 
 
@@ -156,11 +177,11 @@ def report1(verbose = False):
 def report2():
 	result = []
 	runs, on, _ = report1()
-	print(runs)
-	print(on)
+	#print(runs)
+	#print(on)
 	for (task,durations) in runs:
 		result.append((task, sum(durations, datetime.timedelta()))) #start=
-	print(result)
+	#print(result)
 	return result, on
 
 
@@ -259,8 +280,8 @@ def notify_running_change(on, arg):
 
 def tick():
 	try:
-		secs = int(subprocess.check_output([os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/tt_xprintidle')])) / 1000
-		store('tick', secs)
+		xidle = int(subprocess.check_output([os.path.abspath(os.path.dirname(os.path.realpath(__file__))+'/tt_xprintidle')])) / 1000
+		store('tick',  None, xidle)
 		# if secs > 15 * 60:
 		# 	print('idle, stopping')
 		# 	do_stop('idle:%ss'%secs)
@@ -276,11 +297,10 @@ last_start = None
 
 def do_start():
 	arg = 'on'
-	misc = ''
 	if len(sys.argv) > 2:
 		store('desc', sys.argv[2])
 	old = dump2()
-	store(arg, misc)
+	store(arg)
 	notify_running_change(old, arg)
 	noncritical_call(['/home/koom/unixy_time_tracker/tt_beep'])
 
@@ -346,8 +366,8 @@ elif arg == 'is_on':
 		print('no')
 		exit(1)
 elif arg == 'tick':
-	if report2()[1]:
-		print('yep')
+	# if report2()[1]:
+	# 	print('yep')
 		tick()
 elif arg == 'add_hours':
 	float(sys.argv[2])
