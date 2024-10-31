@@ -11,6 +11,8 @@ import subprocess
 host = os.uname().nodename
 Rec = namedtuple('Rec', ['action', 'ts', 'desc', 'xidle', 'host'])
 
+DBG = os.environ.get('TT_DBG', False)
+
 def print_rec_nice(r):
 	print(str(r.ts), r.host, r.action, r.desc, r.xidle)
 
@@ -96,9 +98,17 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 	def stop(at_time):
 		nonlocal on
 		if on:
-			print('stop at %s'%at_time)
+			if DBG:
+				print('stop at %s'%at_time)
 			on = False
 			add_task_time(task, at_time - last_start)
+
+	def check_activity():
+		if on:
+			if at_time - last_activity > datetime.timedelta(minutes=5):
+				if DBG:
+					print('idle, stopping at %s'%last_activity)
+				stop(at_time)
 
 	records = list(report0())
 
@@ -110,8 +120,8 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 	if len(records) == 0:
 		return [], False, '??'
 
-	print('starting loop over minutes')
-
+	if DBG:
+		print('starting loop over minutes')
 
 	at_time = records[0].ts
 	at_record_index = 0
@@ -119,6 +129,9 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 	was_on = False
 
 	while True:
+		if DBG:
+			print('last_activity:', last_activity)
+		check_activity()
 
 		if at_record_index >= len(records):
 			print('end of records.')
@@ -133,9 +146,11 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 			at_record_index += 1
 
 		if len(records_in_minute) == 0:
-			print('no records in minute')
+			if DBG:
+				print('no records in minute')
 		else:
-			print('records_in_minute:')
+			if DBG:
+				print('records_in_minute:')
 
 			# process all records in the minute
 			for r in records_in_minute:
@@ -152,10 +167,10 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 					if not on:
 						continue
 					tick_last_activity = r.ts - datetime.timedelta(seconds=int(r.xidle))
-					print('last_activity:', last_activity, 'tick_last_activity:', tick_last_activity)
 					if last_activity is None or last_activity < tick_last_activity:
 						last_activity = tick_last_activity
-						print('update last_activity to:', last_activity)
+						if DBG:
+							print('update last_activity to:', last_activity)
 				elif r.action == 'error':
 					print(r)
 				elif r.action == 'add_hours':
@@ -163,10 +178,7 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 				else:
 					raise(Exception('unexpected action:%s'%[r.action]))
 
-			if on:
-				if at_time - last_activity > datetime.timedelta(minutes=5):
-					print('idle, stopping at %s'%last_activity)
-					stop(at_time)
+			check_activity()
 
 		at_time += datetime.timedelta(minutes=1)
 
@@ -225,7 +237,7 @@ def dump_csv(custom_locale=None):
 		locale.setlocale(locale.LC_ALL, custom_locale)
 	for task,duration in lines.items():
 		hours = duration.total_seconds()/60/60
-		print(str(task)+';'+locale.format('%.1f', hours))
+		print(str(task)+';'+locale._format('%.1f', hours))
 
 
 
