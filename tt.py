@@ -129,8 +129,8 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 	was_on = False
 
 	while True:
-		if DBG:
-			print('last_activity:', last_activity)
+		#if DBG:
+		#	print('last_activity:', last_activity)
 		check_activity()
 
 		if at_record_index >= len(records):
@@ -147,7 +147,7 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 
 		if len(records_in_minute) == 0:
 			if DBG:
-				print('no records in minute')
+				print('no records in minute', at_time)
 		else:
 			if DBG:
 				print('records_in_minute:')
