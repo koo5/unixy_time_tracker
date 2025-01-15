@@ -1,3 +1,8 @@
 #!/bin/bash
-export XDG_RUNTIME_DIR="/run/user/1000"
-mpv /usr/share/sounds/Oxygen-Im-User-Auth.ogg
+
+echo $USER
+id -u
+export XDG_RUNTIME_DIR="/run/user/`id -u`"
+
+mpv /usr/share/sounds/freedesktop/stereo/audio-volume-change.oga
+

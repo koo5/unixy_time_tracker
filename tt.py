@@ -314,7 +314,8 @@ def do_start():
 	old = dump2()
 	store(arg)
 	notify_running_change(old, arg)
-	noncritical_call(['/home/koom/unixy_time_tracker/tt_beep'])
+	noncritical_call(['tt_beep'])
+    #noncritical_call(['/home/koom/unixy_time_tracker/tt_beep'])
 
 def do_stop(note):
 	arg = 'off'
