@@ -105,7 +105,7 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 
 	def check_activity():
 		if on:
-			if at_time - last_activity > datetime.timedelta(minutes=5):
+			if at_time - last_activity > datetime.timedelta(minutes=25):
 				if DBG:
 					print('idle, stopping at %s'%last_activity)
 				stop(at_time)
@@ -154,7 +154,8 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 
 			# process all records in the minute
 			for r in records_in_minute:
-				print_rec_nice(r)
+				if DBG:
+					print_rec_nice(r)
 				if r.action == 'on':
 					last_activity = r.ts
 					start(r)
