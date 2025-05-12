@@ -1,0 +1,7 @@
+#!/bin/fish
+
+set DIR (dirname (readlink -m (status --current-filename))); cd "$DIR"
+
+./tt on
+
+
