@@ -101,11 +101,12 @@ a run is an uninterrupted stream of activity, testified by ticks with some minim
 			if DBG:
 				print('stop at %s'%at_time)
 			on = False
+			sys.stderr.write(f'add_task_time({task}, {last_start}, {at_time}, {at_time - last_start})\n')
 			add_task_time(task, at_time - last_start)
 
 	def check_activity():
 		if on:
-			if at_time - last_activity > datetime.timedelta(minutes=25):
+			if at_time - last_activity > datetime.timedelta(minutes=15):
 				if DBG:
 					print('idle, stopping at %s'%last_activity)
 				stop(at_time)
